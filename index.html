@@ -2,102 +2,70 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>オフライン画像保存PWAプロトタイプ</title>
+  <title>iPhone向け画像保存PWA 完全版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.png">
   <script>
-    // Service Worker 登録
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').then(() => {
         console.log('Service Worker registered');
       });
     }
   </script>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 1em;
+    }
+    img {
+      width: 100%;
+      max-width: 400px;
+      margin-bottom: 10px;
+    }
+    a.download-link {
+      display: block;
+      margin-top: 10px;
+      font-size: 16px;
+      color: blue;
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
-  <h2>撮影画像をローカル保存（オフライン対応）</h2>
+  <h2>📸 撮影して iPhone に保存する</h2>
 
-  <label>カテゴリ:</label>
-  <input type="text" id="category" placeholder="例: EventA"><br><br>
-
+  <label for="cameraInput">写真を撮影:</label><br>
   <input type="file" accept="image/*" capture id="cameraInput"><br><br>
 
-  <button onclick="saveLocally()">ローカルに保存</button>
-
-  <hr>
-  <h3>保存済み画像</h3>
-  <ul id="imageList"></ul>
+  <div id="preview"></div>
 
   <script>
-    // IndexedDB 保存処理
-    function saveLocally() {
-      const fileInput = document.getElementById('cameraInput');
-      const category = document.getElementById('category').value.trim();
-      const file = fileInput.files[0];
-
-      if (!file || !category) {
-        alert("画像とカテゴリ名を入力してください");
-        return;
-      }
+    document.getElementById('cameraInput').addEventListener('change', function () {
+      const file = this.files[0];
+      if (!file) return;
 
       const reader = new FileReader();
       reader.onload = function (e) {
-        const imageBlob = new Blob([e.target.result]);
-        const dbReq = indexedDB.open("offlineImages", 1);
+        const blob = new Blob([e.target.result], { type: file.type });
+        const url = URL.createObjectURL(blob);
 
-        dbReq.onupgradeneeded = function (event) {
-          const db = event.target.result;
-          db.createObjectStore("photos", { keyPath: "id", autoIncrement: true });
-        };
+        const img = document.createElement('img');
+        img.src = url;
 
-        dbReq.onsuccess = function (event) {
-          const db = event.target.result;
-          const tx = db.transaction("photos", "readwrite");
-          const store = tx.objectStore("photos");
-          store.add({
-            date: new Date().toISOString().split('T')[0],
-            category,
-            filename: `photo_${Date.now()}.jpg`,
-            blob: imageBlob
-          });
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `photo_${Date.now()}.jpg`;
+        a.textContent = '📥 この画像を保存（iPhoneは長押し→"写真に追加"）または「共有→写真に保存」';
+        a.className = 'download-link';
 
-          tx.oncomplete = () => {
-            alert("ローカルに保存しました！");
-            loadImages();
-          };
-        };
+        const preview = document.getElementById('preview');
+        preview.innerHTML = '';
+        preview.appendChild(img);
+        preview.appendChild(a);
       };
       reader.readAsArrayBuffer(file);
-    }
-
-    // 保存済み画像を読み込んで表示
-    function loadImages() {
-      const list = document.getElementById('imageList');
-      list.innerHTML = '';
-
-      const dbReq = indexedDB.open("offlineImages", 1);
-      dbReq.onsuccess = function (event) {
-        const db = event.target.result;
-        const tx = db.transaction("photos", "readonly");
-        const store = tx.objectStore("photos");
-        const cursorReq = store.openCursor();
-
-        cursorReq.onsuccess = function (e) {
-          const cursor = e.target.result;
-          if (cursor) {
-            const data = cursor.value;
-            const li = document.createElement('li');
-            const url = URL.createObjectURL(data.blob);
-            li.innerHTML = `[${data.date}] ${data.category} - <img src="${url}" width="100">`;
-            list.appendChild(li);
-            cursor.continue();
-          }
-        };
-      };
-    }
-
-    window.onload = loadImages;
+    });
   </script>
 </body>
 </html>
