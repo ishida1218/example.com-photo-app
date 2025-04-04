@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>iPhone向け画像保存PWA</title>
+  <title>iPhone向け画像保存PWA 完全版</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.png">
@@ -37,10 +37,14 @@
       width: 100%;
       max-width: 400px;
     }
+    #history img {
+      width: 100px;
+      margin-right: 10px;
+    }
   </style>
 </head>
 <body>
-  <h2>📸 撮影して iPhone に保存する</h2>
+  <h2>撮影してiPhoneに保存</h2>
 
   <label for="folderSelect">保存先フォルダを選択:</label><br>
   <select id="folderSelect">
@@ -54,17 +58,75 @@
 
   <div id="preview"></div>
 
+  <hr>
+  <h3>📂 保存履歴</h3>
+  <div id="history"></div>
+
   <script>
     const folderSelect = document.getElementById('folderSelect');
     const customFolder = document.getElementById('customFolder');
+    const historyDiv = document.getElementById('history');
 
     folderSelect.addEventListener('change', () => {
-      if (folderSelect.value === 'Custom') {
-        customFolder.style.display = 'block';
-      } else {
-        customFolder.style.display = 'none';
-      }
+      customFolder.style.display = folderSelect.value === 'Custom' ? 'block' : 'none';
     });
+
+    function saveToHistory(blob, folderName, fileName) {
+      const dbReq = indexedDB.open("photoHistoryDB", 1);
+
+      dbReq.onupgradeneeded = function (event) {
+        const db = event.target.result;
+        db.createObjectStore("photos", { keyPath: "id", autoIncrement: true });
+      };
+
+      dbReq.onsuccess = function (event) {
+        const db = event.target.result;
+        const tx = db.transaction("photos", "readwrite");
+        const store = tx.objectStore("photos");
+        store.add({ folder: folderName, filename: fileName, blob });
+        tx.oncomplete = loadHistory;
+      };
+    }
+
+    function loadHistory() {
+      const dbReq = indexedDB.open("photoHistoryDB", 1);
+      dbReq.onsuccess = function (event) {
+        const db = event.target.result;
+        const tx = db.transaction("photos", "readonly");
+        const store = tx.objectStore("photos");
+        const cursorReq = store.openCursor();
+
+        historyDiv.innerHTML = '';
+
+        cursorReq.onsuccess = function (e) {
+          const cursor = e.target.result;
+          if (cursor) {
+            const { folder, filename, blob } = cursor.value;
+            const url = URL.createObjectURL(blob);
+
+            const wrapper = document.createElement('div');
+            const img = document.createElement('img');
+            img.src = url;
+
+            const info = document.createElement('span');
+            info.textContent = `[${folder}] ${filename}`;
+
+            const download = document.createElement('a');
+            download.href = url;
+            download.download = filename;
+            download.textContent = '📥 再保存';
+            download.className = 'download-link';
+
+            wrapper.appendChild(img);
+            wrapper.appendChild(info);
+            wrapper.appendChild(download);
+            historyDiv.appendChild(wrapper);
+
+            cursor.continue();
+          }
+        };
+      };
+    }
 
     document.getElementById('cameraInput').addEventListener('change', function () {
       const file = this.files[0];
@@ -79,23 +141,29 @@
       reader.onload = function (e) {
         const blob = new Blob([e.target.result], { type: file.type });
         const url = URL.createObjectURL(blob);
+        const fileName = `${folderName}_photo_${Date.now()}.jpg`;
 
         const img = document.createElement('img');
         img.src = url;
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = `${folderName}_photo_${Date.now()}.jpg`;
-        a.textContent = `📥 ${folderName} に保存`;
+        a.download = fileName;
+        a.textContent = `${folderName} に保存`;
         a.className = 'download-link';
 
         const preview = document.getElementById('preview');
         preview.innerHTML = '';
         preview.appendChild(img);
         preview.appendChild(a);
+
+        // 履歴に保存
+        saveToHistory(blob, folderName, fileName);
       };
       reader.readAsArrayBuffer(file);
     });
+
+    window.onload = loadHistory;
   </script>
 </body>
 </html>
