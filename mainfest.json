@@ -1,10 +1,10 @@
 {
-    "name": "オフライン画像保存PWA",
+    "name": "画像保存PWA",
     "short_name": "画像保存",
-    "start_url": "./",
+    "start_url": "./index.html",
     "display": "standalone",
     "background_color": "#ffffff",
-    "theme_color": "#1976d2",
+    "theme_color": "#2196f3",
     "icons": [
       {
         "src": "icon.png",
