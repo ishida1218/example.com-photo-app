@@ -43,6 +43,7 @@
       margin-bottom: 10px;
       border-bottom: 1px solid #ccc;
       padding-bottom: 10px;
+      cursor: pointer;
     }
     #history img {
       width: 100px;
@@ -123,11 +124,17 @@
             const info = document.createElement('span');
             info.textContent = `[${folder}] ${filename}`;
 
+            // タップで画像ページを開く（別タブ）
+            wrapper.addEventListener('click', () => {
+              window.open(url, '_blank');
+            });
+
             const download = document.createElement('a');
             download.href = url;
             download.download = filename;
             download.textContent = '📥 再保存';
             download.className = 'download-link';
+            download.addEventListener('click', e => e.stopPropagation());
 
             wrapper.appendChild(img);
             wrapper.appendChild(info);
@@ -161,7 +168,7 @@
         const a = document.createElement('a');
         a.href = url;
         a.download = fileName;
-        a.textContent = `📥 ${folderName} に保存`;
+        a.textContent = `📥 ${folderName} に保存（iPhoneは長押し→"写真に追加" または「共有→写真に保存」）`;
         a.className = 'download-link';
 
         const preview = document.getElementById('preview');
