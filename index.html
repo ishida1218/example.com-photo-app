@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>iPhone向け画像保存PWA 完全版</title>
+  <title>iPhone向け画像保存PWA</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="icon.png">
@@ -30,10 +30,24 @@
       color: blue;
       text-decoration: underline;
     }
+    select, input[type="text"] {
+      font-size: 1em;
+      margin-bottom: 1em;
+      padding: 0.5em;
+      width: 100%;
+      max-width: 400px;
+    }
   </style>
 </head>
 <body>
   <h2>📸 撮影して iPhone に保存する</h2>
+
+  <label for="folderSelect">保存先フォルダを選択:</label><br>
+  <select id="folderSelect">
+    <option value="Default">Default</option>
+    <option value="Custom">カスタム入力</option>
+  </select><br>
+  <input type="text" id="customFolder" placeholder="カスタムフォルダ名" style="display: none;"><br>
 
   <label for="cameraInput">写真を撮影:</label><br>
   <input type="file" accept="image/*" capture id="cameraInput"><br><br>
@@ -41,9 +55,25 @@
   <div id="preview"></div>
 
   <script>
+    const folderSelect = document.getElementById('folderSelect');
+    const customFolder = document.getElementById('customFolder');
+
+    folderSelect.addEventListener('change', () => {
+      if (folderSelect.value === 'Custom') {
+        customFolder.style.display = 'block';
+      } else {
+        customFolder.style.display = 'none';
+      }
+    });
+
     document.getElementById('cameraInput').addEventListener('change', function () {
       const file = this.files[0];
       if (!file) return;
+
+      let folderName = folderSelect.value;
+      if (folderName === 'Custom') {
+        folderName = customFolder.value.trim() || 'Uncategorized';
+      }
 
       const reader = new FileReader();
       reader.onload = function (e) {
@@ -55,8 +85,8 @@
 
         const a = document.createElement('a');
         a.href = url;
-        a.download = `photo_${Date.now()}.jpg`;
-        a.textContent = '📥 この画像を保存（iPhoneは長押し→"写真に追加"）または「共有→写真に保存」';
+        a.download = `${folderName}_photo_${Date.now()}.jpg`;
+        a.textContent = `📥 ${folderName} に保存`;
         a.className = 'download-link';
 
         const preview = document.getElementById('preview');
