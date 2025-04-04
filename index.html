@@ -37,14 +37,26 @@
       width: 100%;
       max-width: 400px;
     }
+    #history div {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ccc;
+      padding-bottom: 10px;
+    }
     #history img {
       width: 100px;
+      height: auto;
       margin-right: 10px;
+    }
+    #history span {
+      flex-grow: 1;
+      font-size: 14px;
     }
   </style>
 </head>
 <body>
-  <h2>撮影してiPhoneに保存</h2>
+  <h2>📸 撮影して iPhone に保存する</h2>
 
   <label for="folderSelect">保存先フォルダを選択:</label><br>
   <select id="folderSelect">
@@ -149,7 +161,7 @@
         const a = document.createElement('a');
         a.href = url;
         a.download = fileName;
-        a.textContent = `${folderName} に保存`;
+        a.textContent = `📥 ${folderName} に保存`;
         a.className = 'download-link';
 
         const preview = document.getElementById('preview');
@@ -163,7 +175,7 @@
       reader.readAsArrayBuffer(file);
     });
 
-    window.onload = loadHistory;
+    window.addEventListener('DOMContentLoaded', loadHistory);
   </script>
 </body>
 </html>
